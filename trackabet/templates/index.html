@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Track-A-Bet TabHelper</title>
+  <style>
+    :root {
+      --bg: #0f0f1a;
+      --surface: #1a1a2e;
+      --surface2: #222240;
+      --border: #2a2a4a;
+      --text: #e0e0f0;
+      --text-dim: #8888aa;
+      --green: #00d4aa;
+      --green-dim: #009977;
+      --red: #e94560;
+      --yellow: #f5c542;
+      --blue: #4a9eff;
+      --purple: #a855f7;
+      --radius: 8px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* Layout */
+    .container { max-width: 960px; margin: 0 auto; padding: 20px; }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+    .header h1 {
+      font-size: 20px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .header h1 span { color: var(--green); }
+    .header .badge {
+      font-size: 11px;
+      background: var(--green);
+      color: #000;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+    .header .email-section {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .header .email-section input {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 12px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      width: 200px;
+    }
+    .header .email-section input:focus {
+      outline: none;
+      border-color: var(--green);
+    }
+    .header .email-section .saved-email {
+      font-size: 13px;
+      color: var(--green);
+    }
+
+    /* Cards */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .card h2 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card h2 .count {
+      font-size: 12px;
+      background: var(--surface2);
+      padding: 1px 8px;
+      border-radius: 10px;
+      font-weight: 400;
+      color: var(--text-dim);
+    }
+
+    /* Stats Bar */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      text-align: center;
+    }
+    .stat-card .stat-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-dim);
+    }
+    .stat-card .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+    .stat-card .stat-value.green { color: var(--green); }
+    .stat-card .stat-value.red { color: var(--red); }
+    .stat-card .stat-value.yellow { color: var(--yellow); }
+
+    /* Form */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .form-grid .full-width { grid-column: 1 / -1; }
+
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    .form-group label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-dim);
+    }
+    .form-group input,
+    .form-group select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: var(--radius);
+      font-size: 14px;
+    }
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: var(--green);
+    }
+    .form-group input::placeholder {
+      color: #555;
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+
+    .btn-primary {
+      background: var(--green);
+      color: #000;
+    }
+    .btn-primary:hover { background: var(--green-dim); }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-outline:hover {
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    .btn-danger {
+      background: var(--red);
+      color: #fff;
+    }
+
+    .btn-sm {
+      padding: 4px 10px;
+      font-size: 12px;
+    }
+
+    .btn-full { width: 100%; }
+    .btn-row { margin-top: 16px; display: flex; gap: 8px; }
+    .btn-row .btn { flex: 1; }
+
+    /* Table */
+    .table-wrap {
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th {
+      text-align: left;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-dim);
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 8px 10px;
+      font-size: 13px;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+
+    .status-badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 500;
+    }
+    .status-pending { background: rgba(245,197,66,0.15); color: var(--yellow); }
+    .status-won { background: rgba(0,212,170,0.15); color: var(--green); }
+    .status-lost { background: rgba(233,69,96,0.15); color: var(--red); }
+    .status-push { background: rgba(74,158,255,0.15); color: var(--blue); }
+
+    .profit-pos { color: var(--green); }
+    .profit-neg { color: var(--red); }
+
+    /* Messages */
+    .msg {
+      padding: 10px 14px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      margin-top: 12px;
+      display: none;
+    }
+    .msg.show { display: block; }
+    .msg.success { background: rgba(0,212,170,0.1); border: 1px solid var(--green); color: var(--green); }
+    .msg.error { background: rgba(233,69,96,0.1); border: 1px solid var(--red); color: var(--red); }
+    .msg.info { background: rgba(74,158,255,0.1); border: 1px solid var(--blue); color: var(--blue); }
+
+    /* Natural Language Input */
+    .nl-input-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .nl-input-row input {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: var(--radius);
+      font-size: 14px;
+    }
+    .nl-input-row input:focus {
+      outline: none;
+      border-color: var(--purple);
+    }
+    .nl-input-row input::placeholder {
+      color: #555;
+      font-style: italic;
+    }
+
+    .divider {
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 12px;
+      margin: 16px 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* Quick Links */
+    .link-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 8px;
+    }
+    .link-btn {
+      display: block;
+      text-align: center;
+      padding: 10px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      text-decoration: none;
+      font-size: 13px;
+      transition: all 0.15s;
+    }
+    .link-btn:hover {
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 32px;
+      color: var(--text-dim);
+    }
+    .empty-state .big { font-size: 40px; margin-bottom: 8px; }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .form-grid .full-width { grid-column: 1; }
+      .header { flex-direction: column; gap: 12px; }
+      .header .email-section { width: 100%; }
+      .header .email-section input { width: 100%; }
+      .stats-bar { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <h1>
+      📊 <span>Track-A-Bet</span>
+      <span class="badge">TabHelper</span>
+    </h1>
+    <div class="email-section">
+      {% if email %}
+        <span class="saved-email">✓ {{ email }}</span>
+      {% endif %}
+      <input type="email" id="email-input" placeholder="your@email.com" value="{{ email }}" />
+      <button class="btn btn-outline btn-sm" onclick="saveEmail()">Save</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Stats -->
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="stat-label">Total Bets</div>
+        <div class="stat-value" id="stat-total">{{ stats.total_bets or 0 }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Won</div>
+        <div class="stat-value green" id="stat-wins">{{ stats.wins or 0 }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Lost</div>
+        <div class="stat-value red" id="stat-losses">{{ stats.losses or 0 }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">P/L</div>
+        <div class="stat-value {% if stats.total_profit and stats.total_profit >= 0 %}green{% else %}red{% endif %}" id="stat-pl">
+          {% if stats.total_profit %}
+            {{ '%+.2f'|format(stats.total_profit) }}
+          {% else %}
+            $0
+          {% endif %}
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">ROI</div>
+        <div class="stat-value {% if stats.total_profit and stats.total_profit >= 0 %}green{% else %}red{% endif %}" id="stat-roi">
+          {% if stats.total_staked and stats.total_staked > 0 %}
+            {{ '%+.1f'|format(stats.total_profit / stats.total_staked * 100) }}%
+          {% else %}
+            0%
+          {% endif %}
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Pending</div>
+        <div class="stat-value yellow" id="stat-pending">{{ stats.pending or 0 }}</div>
+      </div>
+    </div>
+
+    <!-- Quick Log -->
+    <div class="card">
+      <h2>⚡ Quick Log Bet</h2>
+
+      <!-- Natural language input -->
+      <div class="nl-input-row">
+        <input
+          type="text"
+          id="nl-input"
+          placeholder='Type natural language... e.g. "Man Utd -1.5 @ 2.10 $50" or "Arsenal over 2.5 @ 1.85 $100"'
+        />
+        <button class="btn btn-outline" onclick="parseNatural()">🔍 Parse</button>
+      </div>
+      <div id="parse-result" class="msg info"></div>
+
+      <div class="divider">or fill the form</div>
+
+      <div class="form-grid">
+        <div class="form-group full-width">
+          <label>Event / Match</label>
+          <input type="text" id="event" placeholder="e.g. Man Utd vs Liverpool" />
+        </div>
+
+        <div class="form-group">
+          <label>Sport</label>
+          <select id="sport">
+            <option value="football">⚽ Football</option>
+            <option value="basketball">🏀 Basketball</option>
+            <option value="tennis">🎾 Tennis</option>
+            <option value="baseball">⚾ Baseball</option>
+            <option value="american-football">🏈 American Football</option>
+            <option value="hockey">🏒 Hockey</option>
+            <option value="darts">🎯 Darts</option>
+            <option value="boxing-mma">🥊 Boxing / MMA</option>
+            <option value="rugby">🏉 Rugby</option>
+            <option value="cricket">🏏 Cricket</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Market</label>
+          <select id="market">
+            <option value="moneyline">Moneyline (1X2)</option>
+            <option value="spread">Spread / Handicap</option>
+            <option value="totals">Totals (Over/Under)</option>
+            <option value="home-total">Home Total</option>
+            <option value="away-total">Away Total</option>
+            <option value="special">Special / Prop</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Selection</label>
+          <input type="text" id="selection" placeholder="e.g. Man Utd (-1.5)" />
+        </div>
+
+        <div class="form-group">
+          <label>Odds (Decimal)</label>
+          <input type="number" id="odds" step="0.01" min="1.00" placeholder="2.10" />
+        </div>
+
+        <div class="form-group">
+          <label>Stake ($)</label>
+          <input type="number" id="stake" step="0.50" min="0" placeholder="50.00" />
+        </div>
+
+        <div class="form-group">
+          <label>Bookmaker</label>
+          <select id="bookmaker">
+            <option value="bet365">bet365</option>
+            <option value="pinnacle">Pinnacle</option>
+            <option value="draftkings">DraftKings</option>
+            <option value="fanduel">FanDuel</option>
+            <option value="betmgm">BetMGM</option>
+            <option value="caesars">Caesars</option>
+            <option value="pointsbet">PointsBet</option>
+            <option value="unibet">UniBet</option>
+            <option value="william-hill">William Hill</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Tipster Tag</label>
+          <input type="text" id="tipster" placeholder="e.g. my-system-v2" />
+        </div>
+
+        <div class="form-group full-width">
+          <label>Notes</label>
+          <input type="text" id="notes" placeholder="Any notes..." />
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary btn-full" onclick="logBet()">📝 Log Bet</button>
+        <button class="btn btn-outline" onclick="clearForm()">Clear</button>
+      </div>
+      <div id="log-status" class="msg"></div>
+    </div>
+
+    <!-- Recent Bets -->
+    <div class="card">
+      <h2>📋 Recent Bets <span class="count">{{ recent_bets|length }}</span></h2>
+      {% if recent_bets %}
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Event</th>
+              <th>Selection</th>
+              <th>Odds</th>
+              <th>Stake</th>
+              <th>Status</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for bet in recent_bets %}
+            <tr>
+              <td style="color: var(--text-dim);">{{ bet.id }}</td>
+              <td style="font-weight: 500;">{{ bet.event[:35] }}{% if bet.event|length > 35 %}...{% endif %}</td>
+              <td style="color: var(--blue);">{{ bet.selection[:20] }}{% if bet.selection|length > 20 %}...{% endif %}</td>
+              <td>{{ '%.2f'|format(bet.odds) }}</td>
+              <td>${{ '%.2f'|format(bet.stake) }}</td>
+              <td>
+                {% if bet.status == 'pending' %}
+                  <span class="status-badge status-pending">⏳ Pending</span>
+                {% elif bet.status == 'won' %}
+                  <span class="status-badge status-won">✅ Won</span>
+                {% elif bet.status == 'lost' %}
+                  <span class="status-badge status-lost">❌ Lost</span>
+                {% elif bet.status == 'push' %}
+                  <span class="status-badge status-push">↔️ Push</span>
+                {% else %}
+                  {{ bet.status }}
+                {% endif %}
+              </td>
+              <td style="color: var(--text-dim); font-size: 12px;">{{ bet.created_at[:10] }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <div class="big">📋</div>
+        <p>No bets logged yet. Log your first bet above!</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Quick Links -->
+    <div class="card">
+      <h2>🔗 Quick Links</h2>
+      <div class="link-grid">
+        <a href="https://trackabet.bettingiscool.com" target="_blank" class="link-btn">📊 Dashboard</a>
+        <a href="https://steamers.bettingiscool.com" target="_blank" class="link-btn">♨️ Steamers</a>
+        <a href="https://darts.bettingiscool.com" target="_blank" class="link-btn">🎯 Darts</a>
+        <a href="https://football.bettingiscool.com" target="_blank" class="link-btn">⚽ Football</a>
+        <a href="https://trueodds.bettingiscool.com" target="_blank" class="link-btn">🧮 True Odds</a>
+        <a href="https://api.bettingiscool.com" target="_blank" class="link-btn">🔌 API</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ========== Email ==========
+    function saveEmail() {
+      const email = document.getElementById('email-input').value.trim();
+      if (!email) return;
+      fetch('/api/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+        .then(r => r.json())
+        .then(d => {
+          if (d.success) location.reload();
+        });
+    }
+
+    // ========== Natural Language Parse ==========
+    function parseNatural() {
+      const text = document.getElementById('nl-input').value.trim();
+      if (!text) return;
+
+      const msgEl = document.getElementById('parse-result');
+      fetch('/api/parse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      })
+        .then(r => r.json())
+        .then(d => {
+          if (d.success && d.parsed) {
+            msgEl.className = 'msg info show';
+            msgEl.textContent = `✅ Parsed: ${d.parsed.selection} @ ${d.parsed.odds}`;
+
+            // Fill form
+            document.getElementById('event').value = d.parsed.event || '';
+            document.getElementById('selection').value = d.parsed.selection || '';
+            if (d.parsed.odds) document.getElementById('odds').value = d.parsed.odds;
+            if (d.parsed.stake) document.getElementById('stake').value = d.parsed.stake;
+          } else {
+            msgEl.className = 'msg error show';
+            msgEl.textContent = '❌ Could not parse. Try: "Team @ 2.10 $50"';
+          }
+        });
+    }
+
+    // Enter key triggers parse
+    document.getElementById('nl-input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') parseNatural();
+    });
+
+    // ========== Log Bet ==========
+    function logBet() {
+      const data = {
+        event: document.getElementById('event').value.trim(),
+        sport: document.getElementById('sport').value,
+        market_type: document.getElementById('market').value,
+        selection: document.getElementById('selection').value.trim(),
+        odds: parseFloat(document.getElementById('odds').value),
+        stake: parseFloat(document.getElementById('stake').value),
+        bookmaker: document.getElementById('bookmaker').value,
+        tipster: document.getElementById('tipster').value.trim(),
+        notes: document.getElementById('notes').value.trim(),
+      };
+
+      // Validate
+      const missing = [];
+      if (!data.event) missing.push('Event');
+      if (!data.selection) missing.push('Selection');
+      if (!data.odds || data.odds < 1) missing.push('Odds');
+      if (!data.stake || data.stake <= 0) missing.push('Stake');
+
+      const msgEl = document.getElementById('log-status');
+
+      if (missing.length) {
+        msgEl.className = 'msg error show';
+        msgEl.textContent = `❌ Missing: ${missing.join(', ')}`;
+        return;
+      }
+
+      fetch('/api/bets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+        .then(r => r.json())
+        .then(d => {
+          if (d.success) {
+            msgEl.className = 'msg success show';
+            msgEl.textContent = `✅ Bet #${d.id} logged! ${data.selection} @ ${data.odds} for $${data.stake}`;
+            clearForm();
+            setTimeout(() => location.reload(), 1200);
+          } else {
+            msgEl.className = 'msg error show';
+            msgEl.textContent = `❌ Error: ${d.error || 'Unknown error'}`;
+          }
+        })
+        .catch(err => {
+          msgEl.className = 'msg error show';
+          msgEl.textContent = `❌ Network error: ${err.message}`;
+        });
+    }
+
+    function clearForm() {
+      document.getElementById('event').value = '';
+      document.getElementById('selection').value = '';
+      document.getElementById('odds').value = '';
+      document.getElementById('stake').value = '';
+      document.getElementById('tipster').value = '';
+      document.getElementById('notes').value = '';
+      document.getElementById('nl-input').value = '';
+      document.getElementById('parse-result').className = 'msg';
+    }
+
+    // Ctrl+Enter to submit from any field
+    document.querySelectorAll('input, select').forEach(el => {
+      el.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 'Enter') logBet();
+      });
+    });
+  </script>
+</body>
+</html>
