@@ -20,7 +20,7 @@ class TrackABetClient:
     """HTTP client for Track-A-Bet's internal API."""
 
     def __init__(self, base_url: str = "https://trackabet.bettingiscool.com",
-                 session_token: str = ""):
+                 session_token: str = "", session_cookie: str = ""):
         self.base_url = base_url
         self.session = requests.Session()
         self.session.headers.update({
@@ -32,6 +32,18 @@ class TrackABetClient:
                 "Authorization": f"Bearer {session_token}",
                 "X-Session-Token": session_token,
             })
+        if session_cookie:
+            self.session.headers.update({"Cookie": session_cookie})
+
+    @classmethod
+    def from_config(cls):
+        """Create a client using saved config (cookie or token)."""
+        config = load_config()
+        return cls(
+            base_url=config.get("api_base_url", "https://trackabet.bettingiscool.com"),
+            session_token=config.get("session_token", ""),
+            session_cookie=config.get("session_cookie", ""),
+        )
 
     def set_token(self, token: str):
         self.session.headers.update({
@@ -43,31 +55,26 @@ class TrackABetClient:
         """Set raw cookie string from browser session."""
         self.session.headers.update({"Cookie": cookie_str})
 
-    def _request(self, method: str, path: str, **kwargs) -> Optional[dict]:
+    def _request(self, method: str, path: str, **kwargs):
+        """Make an HTTP request. Returns parsed JSON or raises on failure."""
         url = urljoin(self.base_url, path)
+        resp = self.session.request(method, url, timeout=30, **kwargs)
+        if resp.status_code == 401:
+            raise PermissionError("Session expired. Re-login to Track-A-Bet and save your cookie.")
+        if resp.status_code != 200:
+            raise ConnectionError(f"HTTP {resp.status_code}: {resp.text[:200]}")
         try:
-            resp = self.session.request(method, url, timeout=15, **kwargs)
-            if resp.status_code == 200:
-                try:
-                    return resp.json()
-                except (json.JSONDecodeError, ValueError):
-                    return {"raw": resp.text}
-            elif resp.status_code == 401:
-                return {"error": "unauthorized", "message": "Session expired. Please re-login."}
-            elif resp.status_code == 404:
-                return {"error": "not_found", "message": f"Endpoint not found: {path}"}
-            else:
-                return {"error": f"http_{resp.status_code}", "message": resp.text[:500]}
-        except requests.RequestException as e:
-            return {"error": "connection_error", "message": str(e)}
+            return resp.json()
+        except (json.JSONDecodeError, ValueError) as e:
+            raise ValueError(f"Invalid JSON response: {e}")
 
-    def check_health(self) -> Optional[dict]:
+    def check_health(self) -> dict:
         """Check if the API is reachable."""
         return self._request("GET", "/api/health")
 
-    def get_bets(self, page: int = 1, limit: int = 50) -> Optional[dict]:
-        """Get bets from Track-A-Bet."""
-        return self._request("GET", "/api/bets", params={"page": page, "limit": limit})
+    def get_all_bets(self) -> list:
+        """Get all bets from Track-A-Bet (returns raw array)."""
+        return self._request("GET", "/api/bets")
 
     def add_bet(self, bet_data: dict) -> Optional[dict]:
         """Log a bet to Track-A-Bet."""

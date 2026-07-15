@@ -234,6 +234,71 @@ def open_trackabet():
     console.print("[green]Opened Track-A-Bet in your browser.[/]")
 
 
+@cli.command("save-cookie")
+@click.argument("cookie_value", required=False)
+def save_cookie(cookie_value):
+    """Save your Track-A-Bet session cookie for API access.
+
+    Get the cookie value from Safari Developer Tools → Network tab →
+    click any request to trackabet.bettingiscool.com → Request headers → Cookie.
+
+    The full Cookie header value (session=...; cf_clearance=...) is saved
+    and used for future syncs.
+    """
+    if cookie_value:
+        config = load_config()
+        config["session_cookie"] = cookie_value
+        save_config(config)
+        console.print("[green]✅ Session cookie saved![/]")
+        console.print("[dim]You can now run `trackabet sync` to pull your bets.[/]")
+        return
+
+    console.print("[bold]📋 How to get your cookie:[/]")
+    console.print()
+    console.print("1. Open Safari and log into [underline]https://trackabet.bettingiscool.com[/]")
+    console.print("2. Go to [bold]Develop → Show Web Inspector[/] (or right-click → Inspect)")
+    console.print("3. Click the [bold]Network[/] tab")
+    console.print("4. Refresh the page")
+    console.print("5. Click any request to [bold]trackabet.bettingiscool.com[/]")
+    console.print("6. Find the [bold]Cookie[/] header in the Request headers")
+    console.print("7. Copy the entire Cookie value and run:")
+    console.print()
+    console.print("  [bold]trackabet save-cookie \"session=...; cf_clearance=...\"[/]")
+    console.print()
+
+
+@cli.command()
+@click.option("--from-file", "-f", type=str, help="Import from a JSON file instead of API")
+def sync(from_file):
+    """Sync bets from Track-A-Bet into the local database.
+
+    Uses the saved session cookie (set with `trackabet save-cookie`).
+    New bets are added, existing ones are skipped.
+    """
+    from .import_from_trackabet import sync_from_api, import_from_file
+
+    if from_file:
+        console.print(f"[blue]Importing from {from_file}...[/]")
+        import_from_file(from_file)
+    else:
+        config = load_config()
+        if not config.get("session_cookie"):
+            console.print("[red]❌ No session cookie saved.[/]")
+            console.print("Run [bold]trackabet save-cookie[/] first to set it up.")
+            return
+        console.print("[blue]Syncing from Track-A-Bet...[/]")
+        sync_from_api()
+
+    # Show updated stats
+    stats = db.get_stats()
+    win_rate = (stats["wins"] / (stats["wins"] + stats["losses"]) * 100) if (stats["wins"] + stats["losses"]) > 0 else 0
+    roi = (stats["total_profit"] / stats["total_staked"] * 100) if stats["total_staked"] > 0 else 0
+
+    console.print(f"\n[bold]📊 Updated stats:[/]")
+    console.print(f"  Total: {stats['total_bets']}  |  Won: [green]{stats['wins']}[/]  |  Lost: [red]{stats['losses']}[/]  |  Pending: [yellow]{stats['pending']}[/]")
+    console.print(f"  P/L: [green]+${stats['total_profit']:.2f}[/]  |  ROI: [green]+{roi:.2f}%[/]  |  Win Rate: {win_rate:.1f}%")
+
+
 @cli.command()
 @click.argument("bet_id", type=int)
 @click.option("--status", type=click.Choice(["won", "lost", "push", "pending"]))

@@ -1,10 +1,10 @@
 """Import bets from the live Track-A-Bet API into the local database.
 
 Usage:
-    python -m trackabet.import_from_trackabet <response.json>
-    
-Or with a session cookie:
-    curl -s -H "Cookie: session=..." https://trackabet.bettingiscool.com/api/bets > bets.json
+    # Sync directly from Track-A-Bet (uses saved cookie):
+    python -m trackabet.import_from_trackabet --sync
+
+    # Or import from a saved JSON file:
     python -m trackabet.import_from_trackabet bets.json
 """
 import json
@@ -12,12 +12,30 @@ import sys
 from pathlib import Path
 
 from . import database as db
+from .api_client import TrackABetClient
 
 
-def import_bets(json_file: str):
-    """Import bets from a Track-A-Bet API JSON response into the local DB."""
-    db.init_db()
+def sync_from_api():
+    """Fetch all bets from Track-A-Bet and import them into the local DB."""
+    print("🌐 Fetching bets from Track-A-Bet...")
+    client = TrackABetClient.from_config()
+    try:
+        bets = client.get_all_bets()
+    except PermissionError as e:
+        print(f"❌ {e}")
+        print("\n👉 Save your session cookie with: python run.py save-cookie")
+        return
+    except Exception as e:
+        print(f"❌ Connection failed: {e}")
+        return
     
+    print(f"📥 Got {len(bets)} bets from Track-A-Bet")
+    _import_bets(bets)
+
+
+def import_from_file(json_file: str):
+    """Import bets from a saved JSON file."""
+    print(f"📂 Loading bets from {json_file}...")
     raw = json.loads(Path(json_file).read_text())
     
     if isinstance(raw, dict) and "bets" in raw:
@@ -28,12 +46,10 @@ def import_bets(json_file: str):
         print(f"❌ Unexpected JSON structure. Got {type(raw).__name__}")
         return
     
-    print(f"📥 Found {len(bets)} bets to import...")
-    
-    imported = 0
-    skipped = 0
-    
-    for bet in bets:
+    _import_bets(bets)
+
+
+def _import_bets(bets: list):
         # Map Track-A-Bet fields to our local schema
         trackabet_id = str(bet["id"])
         
@@ -122,6 +138,12 @@ def import_bets(json_file: str):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python -m trackabet.import_from_trackabet <bets.json>")
+        print("Usage:")
+        print("  python -m trackabet.import_from_trackabet --sync     Sync from Track-A-Bet")
+        print("  python -m trackabet.import_from_trackabet bets.json  Import from file")
         sys.exit(1)
-    import_bets(sys.argv[1])
+    
+    if sys.argv[1] == "--sync":
+        sync_from_api()
+    else:
+        import_from_file(sys.argv[1])
