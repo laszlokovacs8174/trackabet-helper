@@ -1,6 +1,5 @@
 """Local SQLite database for bet storage."""
 import sqlite3
-import json
 from datetime import datetime, timezone
 from typing import Optional
 from .config import get_db_path
@@ -47,28 +46,36 @@ def init_db():
         CREATE INDEX IF NOT EXISTS idx_bets_created ON bets(created_at DESC);
         CREATE INDEX IF NOT EXISTS idx_bets_status ON bets(status);
         CREATE INDEX IF NOT EXISTS idx_bets_sport ON bets(sport);
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_bets_trackabet_id ON bets(trackabet_id);
     """)
-    conn.commit()
-    conn.close()
 
 
 def add_bet(bet: dict) -> int:
+    market_type = bet.get("market_type") or "moneyline"
     conn = get_conn()
     cursor = conn.execute("""
         INSERT INTO bets (event, sport, market_type, selection, odds, stake,
-                          bookmaker, tipster, notes)
+                          bookmaker, tipster, notes, status, profit, clv,
+                          trackabet_id, created_at, settled_at)
         VALUES (:event, :sport, :market_type, :selection, :odds, :stake,
-                :bookmaker, :tipster, :notes)
+                :bookmaker, :tipster, :notes, :status, :profit, :clv,
+                :trackabet_id, :created_at, :settled_at)
     """, {
         "event": bet["event"],
         "sport": bet.get("sport", "other"),
-        "market_type": bet.get("market_type", "moneyline"),
+        "market_type": market_type,
         "selection": bet["selection"],
         "odds": bet["odds"],
         "stake": bet["stake"],
         "bookmaker": bet.get("bookmaker", "bet365"),
         "tipster": bet.get("tipster", ""),
         "notes": bet.get("notes", ""),
+        "status": bet.get("status", "pending"),
+        "profit": bet.get("profit", 0),
+        "clv": bet.get("clv", 0),
+        "trackabet_id": bet.get("trackabet_id", ""),
+        "created_at": bet.get("created_at", datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")),
+        "settled_at": bet.get("settled_at"),
     })
     conn.commit()
     bet_id = cursor.lastrowid
