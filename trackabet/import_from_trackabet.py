@@ -50,7 +50,14 @@ def import_from_file(json_file: str):
 
 
 def _import_bets(bets: list):
-        # Map Track-A-Bet fields to our local schema
+    db.init_db()
+
+    print(f"📥 Processing {len(bets)} bets...")
+
+    imported = 0
+    skipped = 0
+
+    for bet in bets:
         trackabet_id = str(bet["id"])
         
         # Build event name from runner names
@@ -93,7 +100,7 @@ def _import_bets(bets: list):
             status = "won"
         elif profit == 0:
             status = "push"
-        else:  # profit < 0
+        else:
             status = "lost"
         
         # Map market type
@@ -118,10 +125,13 @@ def _import_bets(bets: list):
             "trackabet_id": trackabet_id,
             "created_at": bet.get("created_at", ""),
         }
-        
-        db.add_bet(local_bet)
-        imported += 1
     
+        try:
+            db.add_bet(local_bet)
+            imported += 1
+        except Exception:
+            skipped += 1
+
     print(f"✅ Imported: {imported} new bets")
     print(f"⏭️  Skipped (already exist): {skipped}")
     print(f"📊 Total in local DB: {imported + skipped}")
